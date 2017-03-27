@@ -15,7 +15,7 @@ if __name__ == '__main__':
     # for filename in ['file2.raw', 'file3.raw']:
     filename = 'file1.raw'
 
-    xc.start_recording(filename)
+    xc.start_recording(filename, save_meta_fields=False)
     time.sleep(20)
     meta = xc.stop_recording()
 

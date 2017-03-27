@@ -7,7 +7,7 @@ import socket
 import requests
 import threading
 import queue
-
+import struct
 
 class XcamCapture():
 
@@ -115,10 +115,16 @@ class XcamCapture():
         else:
             return None
 
-    def _capture_frame_stream(self, from_socket, to_stream, frame_size):
+    def _capture_frame_stream(self, from_socket, to_stream, mode, frame_size, save_meta_fields, meta_handler):
         print('_capture_frame_stream started')
         self.frames_count = 0
         try:
+            if save_meta_fields:
+                if meta_handler is None:
+                    to_meta_stream = to_stream
+                else:
+                    to_meta_stream = meta_handler
+            from_socket.sendall(b'\x01\x00\x00\x00' if mode == 'fifo' else b'\x02\x00\x00\x00')
             frame_data = bytearray(frame_size)
             data_start_pointer = 0
             data_end_pointer = 0
@@ -135,7 +141,13 @@ class XcamCapture():
                     chunk = data[:chunk_len]
                     remaining = data[chunk_len:]
                     frame_data[data_start_pointer:data_start_pointer+chunk_len] = chunk
-                    to_stream.write(frame_data)
+                    # Extract meta and image data from frame
+                    image_data = frame_data[4:]
+                    timestamp_data = frame_data[:4]
+                    print(struct.unpack('I', timestamp_data))
+                    if save_meta_fields:
+                        to_meta_stream.write(timestamp_data)
+                    to_stream.write(image_data)
                     self.frames_count += 1
                     # print('Wrote', len(frame_data), 'bytes to stream.')
                     frame_data[:remaining_len] = remaining
@@ -154,7 +166,7 @@ class XcamCapture():
             to_stream.close()
             print('_capture_frame_stream closed')
 
-    def start_recording(self, stream):
+    def start_recording(self, stream, mode='fifo', save_meta_fields=False, meta_handler=None):
         if isinstance(stream, str):
             stream_obj = open(stream, 'wb')
         else:
@@ -169,7 +181,7 @@ class XcamCapture():
         self.enabled = True
         self._capture_thread = threading.Thread(name='capture_thread',
                                                 target=self._capture_frame_stream,
-                                                args=[client_socket, stream_obj, self.meta['frame_size']])
+                                                args=[client_socket, stream_obj, mode, self.meta['frame_size'] + 4, save_meta_fields, meta_handler])  # metadata field is 4 bytes
         self._capture_thread.start()
 
     def stop_recording(self):

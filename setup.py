@@ -12,7 +12,7 @@ with open('README.md') as f:
 with open('LICENSE') as f:
     license_file = f.read()
 
-install_requires = ['requests>=2.12.4']
+install_requires = ['requests>=2.12.4', 'matplotlib', 'numpy']
 
 setup(name='xcamclient',
       version='0.0.1',

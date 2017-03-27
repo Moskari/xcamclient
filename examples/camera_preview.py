@@ -98,7 +98,8 @@ if __name__ == '__main__':
     print('Size:', size, 'Dims:', dims, 'Dtype:', pixel_dtype, 'Pixel size:', pixel_size)
 
     stream = PreviewStream(size)
-    xc.start_recording(stream)
+
+    xc.start_recording(stream, 'lilo', save_meta_fields=False)
 
     # Show images
     fig = plt.figure()
@@ -131,6 +132,8 @@ if __name__ == '__main__':
                                 interval=60,
                                 blit=True)
     pylab.show()
+
+    input('Press enter to shut down')
     xc.stop_recording()
     xc.stop_camera()
     resp = xc.close_camera()
